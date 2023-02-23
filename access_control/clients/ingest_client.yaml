@@ -1,0 +1,7 @@
+secret: ingest_secret
+details:
+  read-all: true
+grant_types:
+  - client_credentials
+id: ingest_client
+resourceType: Client
