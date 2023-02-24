@@ -1,6 +1,6 @@
 secret: ingest_secret
 details:
-  read-all: true
+  read-study: SD_0 
 grant_types:
   - client_credentials
 id: ingest_client

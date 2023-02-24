@@ -3,6 +3,7 @@
 import os
 import json
 import argparse
+import time
 from pprint import pprint
 from pathlib import Path
 import yaml
@@ -11,36 +12,38 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from config import (
-    AIDBOX_HOST,
-    AIDBOX_PORT,
+    BASE_URL,
     AIDBOX_ADMIN_CLIENT_ID,
     AIDBOX_ADMIN_CLIENT_SECRET,
-    BASE_URL,
+
 )
+from scripts.misc import get_oauth2_token
 
 
-def register_client(client_file, client_secret):
+def load_policy(policy_file, client_ids):
     """
-    Register a new OAuth2 client with Aidbox. Grant type: client credentials
+    Create AccessPolicy for list of clients
     """
-    with open(client_file, "r") as yaml_file:
-        payload = yaml.safe_load(yaml_file)
-    payload["secret"] = client_secret
-    client_id = payload["id"]
+    with open(policy_file, "r") as yaml_file:
+        policy = yaml.safe_load(yaml_file)
 
-    print(f"🛠️  Registering new OAuth2 client {client_id}")
+    policy_id = policy["id"]
+    print(f"🛂 Apply access policy {policy_id} to {client_ids}")
+
+    clients = [{"id": cid, "resourceType": "Client"} for cid in client_ids]
+    policy["link"] = clients
     headers = {
         "Content-Type": "application/json",
     }
     try:
         resp = requests.put(
-            f"{BASE_URL}/Client/{client_id}",
+            f"{BASE_URL}/AccessPolicy/{policy_id}",
             auth=HTTPBasicAuth(
                 AIDBOX_ADMIN_CLIENT_ID,
                 AIDBOX_ADMIN_CLIENT_SECRET
             ),
             headers=headers,
-            json=payload
+            json=policy
         )
         resp.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -54,22 +57,23 @@ def cli():
     CLI for running this script
     """
     parser = argparse.ArgumentParser(
-        description='Register OAuth 2 client with client credentials grant'
+        description='Setup aidbox app'
     )
     parser.add_argument(
-        "client_file",
+        "policy_file",
         type=lambda p: Path(p).absolute(),
-        help="Path to the client file",
+        help="Path to the access policy file",
     )
     parser.add_argument(
-        "client_secret",
-        help="Client secret for the client defined in client_file",
+        "client_ids",
+        type=lambda id_list: [id_.strip() for id_ in id_list.split(",")],
+        help="List of client IDs to apply the policy to",
     )
     args = parser.parse_args()
 
-    register_client(args.client_file, args.client_secret)
+    load_policy(args.policy_file, args.client_ids)
 
-    print("✅ OAuth2 client registration complete")
+    print("✅ Load access policy complete")
 
 
 if __name__ == "__main__":
