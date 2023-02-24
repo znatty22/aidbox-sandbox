@@ -1,0 +1,5 @@
+secret: secret
+grant_types:
+  - client_credentials
+id: admin_client
+resourceType: Client

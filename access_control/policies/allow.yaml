@@ -1,0 +1,6 @@
+link:
+  - id: admin_client
+    resourceType: Client
+engine: allow
+id: allow-all-policy 
+resourceType: AccessPolicy
