@@ -1,0 +1,41 @@
+# Grant read access to patients belonging to a particular study(ies)
+# if the client has the study_id(s) in its read-study list of IDs
+# FHIR resources belong to a study if they have the study_id in their tag list
+# (e.g. Patient.meta.tags.0.code=<study_id>)
+#
+# NOTE: This currently only works for a client that has access to a single 
+# study. Need to figure out how to expand to multiple studies. What we want 
+# is to check that the study_id from the query string: _tag=<study_id> is in 
+# the list of client.details.read_study
+
+id: read-study-patients-policy
+resourceType: AccessPolicy
+link:
+  - id: ingest_client
+    resourceType: Client
+engine: complex
+and:
+  # Check 1 - URI, request method
+  - engine: matcho
+    matcho:
+      uri: '#\/fhir\/.*'
+      client:
+        details:
+          read-study: 'present?' 
+      params:
+        _tag: '.client.details.read-study'
+      request-method: get
+  # NOTE: I don't know if this is necessary. I think we just need to ensure that the 
+  # client has access to the route via the study ID tag.
+  # This SQL check is an unecessary extra step that ensures at least 1 study 
+  # patient exists
+  - engine: sql
+    sql:
+      query: |
+        select true from (
+          select
+          	resource#>>'{meta,tag,0,code}' as study_id
+          from "patient"
+        ) as study_patients
+        where study_patients.study_id = {{client.details.read-study}} 
+        limit 1;

@@ -1,0 +1,12 @@
+link:
+  - id: ingest_client
+    resourceType: Client
+engine: matcho
+matcho:
+  uri: '#\/fhir\/.*'
+  client:
+    details:
+      read-all: true
+  request-method: get
+id: read-all-study-policy
+resourceType: AccessPolicy
